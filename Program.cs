@@ -3,14 +3,42 @@ using LmuStatsViewer.Domain;
 
 Console.ForegroundColor = ConsoleColor.Red;
 Console.WriteLine("Welcome to the LMU Stats Viewer...");
-Console.ForegroundColor = ConsoleColor.Gray;
+Console.ResetColor();
 FindPathToResultsFolder();
 
 var allDrivingSessions = new List<DrivingSession>();
-FindAllUnprocessedFilesAndProcess(allDrivingSessions);
-PrintStatistics(allDrivingSessions);
+FindProcessedDrivingSessionsAndLoad();
+FindAllUnprocessedFilesAndProcess();
+PrintStatistics();
 
-static void PrintStatistics(List<DrivingSession> allDrivingSessions)
+#region Helper methods
+void FindProcessedDrivingSessionsAndLoad()
+{
+    if (Settings.PathToStatisticsFile == null)
+    {
+        Console.WriteLine("Path to statistics file not found!");
+        return;
+    }
+    
+    if (File.Exists(Settings.PathToStatisticsFile))
+    {
+        var statistics = File.ReadAllText(Settings.PathToStatisticsFile);
+        allDrivingSessions = JsonSerializer.Deserialize<List<DrivingSession>>(statistics);
+    }
+}
+
+void SaveStatistics()
+{
+    if (Settings.PathToStatisticsFile == null)
+    {
+        Console.WriteLine("Path to statistics file not found!");
+        return;
+    }
+    
+    File.WriteAllText(Settings.PathToStatisticsFile, JsonSerializer.Serialize(allDrivingSessions));
+}
+
+void PrintStatistics()
 {
     Console.WriteLine("\n\nAll these values are estimates, since data collected from the game is not super accurate.\n");
     
@@ -38,7 +66,7 @@ static void PrintStatistics(List<DrivingSession> allDrivingSessions)
     }
 }
 
-static void FindAllUnprocessedFilesAndProcess(List<DrivingSession> allDrivingSessions)
+void FindAllUnprocessedFilesAndProcess()
 {
     if (Settings.PathToResultsFolder == null)
     {
@@ -48,8 +76,11 @@ static void FindAllUnprocessedFilesAndProcess(List<DrivingSession> allDrivingSes
     
     var allFiles = Directory.GetFiles(Path.Combine(Settings.PathToResultsFolder, "UserData\\Log\\Results"), "*.xml");
     var failedFiles = new List<string>();
+    var newFiles = new List<string>();
     foreach (var file in allFiles)
     {
+        if (allDrivingSessions.Any(ds => ds.SessionFile == Path.GetFileName(file))) continue;
+        
         Console.WriteLine($"Processing {file}...");
         var session = DrivingSession.MakeFromFile(file);
         if (session.SessionType == SessionType.Unknown)
@@ -57,10 +88,13 @@ static void FindAllUnprocessedFilesAndProcess(List<DrivingSession> allDrivingSes
             failedFiles.Add(file);
             continue;
         }
+        
+        newFiles.Add(file);
         allDrivingSessions.Add(session);
     }
     Console.WriteLine($"Failed files: {failedFiles.Count}");
-    Console.WriteLine(JsonSerializer.Serialize(failedFiles));
+    Console.WriteLine($"New sessions added: {newFiles.Count}");
+    if (newFiles.Count > 0) SaveStatistics();
 }
 
 static void FindPathToResultsFolder()
@@ -130,3 +164,4 @@ static void FindPathToResultsFolder()
         Console.WriteLine(JsonSerializer.Serialize(settings));
     }
 }
+#endregion
