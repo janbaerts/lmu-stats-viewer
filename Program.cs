@@ -152,7 +152,6 @@ static void FindPathToResultsFolder()
         {
             if (!setting.Contains('=')) continue;
             settings.Add(setting.Split('=')[0], setting.Split('=')[1]);
-            Console.WriteLine(JsonSerializer.Serialize(settings));
 
             if (settings.ContainsKey("PATH_TO_LMU"))
             {
