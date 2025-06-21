@@ -64,6 +64,14 @@ void PrintStatistics()
         if (favouriteCarsDistanceItem.Distance < 0.01) break;
         Print.Line(favouriteCarsDistanceItem.CarType, favouriteCarsDistanceItem.Distance.ToString("0.00"), "km");
     }
+    
+    Print.Header("Favourite track courses");
+    var favouriteTrackCoursesDistance = allDrivingSessions.GroupBy(ds => ds.TrackCourse).Select(g => new { TrackCourse = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
+    foreach (var favouriteTrackCoursesDistanceItem in favouriteTrackCoursesDistance)
+    {
+        if (favouriteTrackCoursesDistanceItem.Distance < 0.01) break;
+        Print.Line(favouriteTrackCoursesDistanceItem.TrackCourse, favouriteTrackCoursesDistanceItem.Distance.ToString("0.00"), "km");
+    }
 }
 
 void FindAllUnprocessedFilesAndProcess()
