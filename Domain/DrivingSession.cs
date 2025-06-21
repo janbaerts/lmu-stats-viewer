@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 
 namespace LmuStatsViewer.Domain;
@@ -20,18 +21,21 @@ public class DrivingSession
     public int CompletedLaps { get; set; }
 
     public double DrivenDistanceInMeters => TrackLengthInMeters * CompletedLaps;
+    
+    private static XmlSerializer serializer = new XmlSerializer(typeof(RFactorXml));
 
     public static DrivingSession MakeFromFile(string filePath)
     {
         DrivingSession session = new DrivingSession();
 
-        using var reader = new StreamReader(filePath);
-        var serializer = new XmlSerializer(typeof(RFactorXml));
-
         if (File.Exists(filePath))
         {
             try
             {
+                var plainXmlForCleanup = File.ReadAllText(filePath);
+                plainXmlForCleanup = plainXmlForCleanup.Replace("\uFFFD", "");
+        
+                using var reader = new StringReader(plainXmlForCleanup);
                 var result = (RFactorXml)serializer.Deserialize(reader);
                 Console.WriteLine(Path.GetFileName(filePath));
 

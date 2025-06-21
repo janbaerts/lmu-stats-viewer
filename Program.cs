@@ -9,7 +9,43 @@ FindPathToResultsFolder();
 var allDrivingSessions = new List<DrivingSession>();
 FindProcessedDrivingSessionsAndLoad();
 FindAllUnprocessedFilesAndProcess();
-PrintStatistics();
+PrintMainStatistics();
+
+#region Printing methods
+void PrintMainStatistics()
+{
+    Console.WriteLine("\n\nAll these values are estimates, since data collected from the game is not super accurate.\n");
+    
+    Print.Header("Total distance");
+    var totalDistanceInKm = allDrivingSessions.Sum(ds => ds.DrivenDistanceInMeters) / 1000;
+    Print.Line("Total distance", totalDistanceInKm.ToString("0.00"), "km");
+    
+    Print.Header("Distance per class");
+    var distancePerClass = allDrivingSessions.GroupBy(ds => ds.CarClass)
+        .Select(g => new { Class = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 })
+        .OrderByDescending(d => d.Distance)
+        .ToList();
+    foreach (var distancePerClassItem in distancePerClass)
+    {
+        if (distancePerClassItem.Distance < 0.01) break;
+        Print.Line(distancePerClassItem.Class, distancePerClassItem.Distance.ToString("0.00"), "km");
+    }
+    
+    Print.Header("Favourite cars");
+    var favouriteCarsDistance = allDrivingSessions.GroupBy(ds => ds.CarType).Select(g => new { CarType = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
+    for (int i = 0; i < 3; i++)
+    {
+        Print.Line($"{i + 1}. {favouriteCarsDistance[i].CarType}", favouriteCarsDistance[i].Distance.ToString("0.00"), "km");
+    }
+    
+    Print.Header("Favourite tracks");
+    var favouriteTrackCoursesDistance = allDrivingSessions.GroupBy(ds => ds.TrackCourse).Select(g => new { TrackCourse = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
+    for (int i = 0; i < 3; i++)
+    {
+        Print.Line($"{i + 1}. {favouriteTrackCoursesDistance[i].TrackCourse}", favouriteTrackCoursesDistance[i].Distance.ToString("0.00"), "km");   
+    }
+}
+#endregion
 
 #region Helper methods
 void FindProcessedDrivingSessionsAndLoad()
@@ -36,42 +72,6 @@ void SaveStatistics()
     }
     
     File.WriteAllText(Settings.PathToStatisticsFile, JsonSerializer.Serialize(allDrivingSessions));
-}
-
-void PrintStatistics()
-{
-    Console.WriteLine("\n\nAll these values are estimates, since data collected from the game is not super accurate.\n");
-    
-    Print.Header("Total distance");
-    var totalDistanceInKm = allDrivingSessions.Sum(ds => ds.DrivenDistanceInMeters) / 1000;
-    Print.Line("Total distance", totalDistanceInKm.ToString("0.00"), "km");
-    
-    Print.Header("Distance per class");
-    var distancePerClass = allDrivingSessions.GroupBy(ds => ds.CarClass)
-        .Select(g => new { Class = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 })
-        .OrderByDescending(d => d.Distance)
-        .ToList();
-    foreach (var distancePerClassItem in distancePerClass)
-    {
-        if (distancePerClassItem.Distance < 0.01) break;
-        Print.Line(distancePerClassItem.Class, distancePerClassItem.Distance.ToString("0.00"), "km");
-    }
-    
-    Print.Header("Favourite cars");
-    var favouriteCarsDistance = allDrivingSessions.GroupBy(ds => ds.CarType).Select(g => new { CarType = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
-    foreach (var favouriteCarsDistanceItem in favouriteCarsDistance)
-    {
-        if (favouriteCarsDistanceItem.Distance < 0.01) break;
-        Print.Line(favouriteCarsDistanceItem.CarType, favouriteCarsDistanceItem.Distance.ToString("0.00"), "km");
-    }
-    
-    Print.Header("Favourite track courses");
-    var favouriteTrackCoursesDistance = allDrivingSessions.GroupBy(ds => ds.TrackCourse).Select(g => new { TrackCourse = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
-    foreach (var favouriteTrackCoursesDistanceItem in favouriteTrackCoursesDistance)
-    {
-        if (favouriteTrackCoursesDistanceItem.Distance < 0.01) break;
-        Print.Line(favouriteTrackCoursesDistanceItem.TrackCourse, favouriteTrackCoursesDistanceItem.Distance.ToString("0.00"), "km");
-    }
 }
 
 void FindAllUnprocessedFilesAndProcess()
@@ -169,7 +169,6 @@ static void FindPathToResultsFolder()
                 Settings.PlayerName = settings["PLAYER_NAME"];
             }
         }
-        Console.WriteLine(JsonSerializer.Serialize(settings));
     }
 }
 #endregion
