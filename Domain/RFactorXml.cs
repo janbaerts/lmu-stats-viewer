@@ -60,6 +60,32 @@ public class ConnectionType
     public string Type { get; set; }
 }
 
+public class DrivingStream
+{
+    [XmlElement("Score", typeof(Score))]
+    [XmlElement("Penalty", typeof(Penalty))]
+    [XmlElement("Incident", typeof(Incident))]
+    [XmlElement("Sector", typeof(Sector))]
+    [XmlElement("Chat", typeof(Chat))]
+    public List<StreamEvent> Events { get; set; }
+}
+
+
+public abstract class StreamEvent
+{
+    [XmlAttribute("et")]
+    public float ElapsedTime { get; set; }
+
+    [XmlText]
+    public string Value { get; set; }
+}
+
+public class Score : StreamEvent { }
+public class Penalty : StreamEvent { }
+public class Incident : StreamEvent { }
+public class Sector : StreamEvent { }
+public class Chat : StreamEvent { }
+
 public class XmlDrivingSession
 {
     public long DateTime { get; set; }
@@ -67,8 +93,8 @@ public class XmlDrivingSession
     public int Laps { get; set; }
     public int Minutes { get; set; }
 
-    [XmlElement("Sent")]
-    public List<SentMessage> Stream { get; set; }
+    [XmlElement("Stream")]
+    public List<DrivingStream> Stream { get; set; }
     
     [XmlElement("Driver")]
     public List<Driver> Drivers { get; set; }
