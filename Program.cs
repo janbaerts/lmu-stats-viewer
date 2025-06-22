@@ -11,7 +11,78 @@ FindProcessedDrivingSessionsAndLoad();
 FindAllUnprocessedFilesAndProcess();
 PrintMainStatistics();
 
+var menu = new List<string> { "Overview", "Favourite tracks", "Favourite cars", "Quit LMU Stats Viewer" };
+var menuChoices = new List<char> { 'o', 't', 'c', 'q' };
+char menuChoice = 'o';
+while (menuChoice != 'q' && menuChoice != 'Q')
+{
+    PrintMenu();
+    menuChoice = Console.ReadKey().KeyChar;
+    Console.WriteLine();
+    switch (menuChoice)
+    {
+        case 'o':
+        case 'O':
+            PrintMainStatistics();
+            break;
+        case 't':
+        case 'T':
+            PrintTrackOverview();
+            break;
+        case 'c':
+        case 'C':
+            PrintCarOverview();
+            break;
+        case 'q':
+        case 'Q':
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Thanks for using LMU Stats Viewer!");
+            Console.ResetColor();
+            break;
+    }
+}
+
 #region Printing methods
+
+void PrintMenu()
+{
+    Console.ForegroundColor = ConsoleColor.White;
+    Console.WriteLine("\nPlease choose an option:");
+    Console.ResetColor();
+    for (int i = 0; i < menu.Count; i++)
+    {
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write($"[{menuChoices[i]}] ");
+        Console.ResetColor();
+        Console.WriteLine($"{menu[i]}");
+    }
+    Console.Write("\nYour choice: ");
+}
+
+void PrintTrackOverview()
+{
+    Print.Header("Favourite tracks");
+    var favouriteTrackCoursesDistance = allDrivingSessions.GroupBy(ds => ds.TrackCourse).Select(g => new { TrackCourse = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
+    for (int i = 0; i < favouriteTrackCoursesDistance.Count; i++)
+    {
+        if (favouriteTrackCoursesDistance[i].Distance < 0.01) break;
+        Print.Line($"{i + 1}. {favouriteTrackCoursesDistance[i].TrackCourse}", favouriteTrackCoursesDistance[i].Distance.ToString("0.00"), "km");   
+    }
+
+}
+
+void PrintCarOverview()
+{
+    Print.Header("Favourite cars");
+    var favouriteCarsDistance = allDrivingSessions.GroupBy(ds => ds.CarType).Select(g => new { CarType = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
+    for (int i = 0; i < favouriteCarsDistance.Count; i++)
+    {
+        if (favouriteCarsDistance[i].Distance < 0.01) break;
+        Print.Line($"{i + 1}. {favouriteCarsDistance[i].CarType}", favouriteCarsDistance[i].Distance.ToString("0.00"), "km");
+    }
+
+}
+
 void PrintMainStatistics()
 {
     Console.WriteLine("\n\nAll these values are estimates, since data collected from the game is not super accurate.\n");
@@ -109,7 +180,7 @@ static void FindPathToResultsFolder()
 {
     if (!File.Exists("settings.ini"))
     {
-        Console.WriteLine("Please enter the FULL path to your steam folder containing Le Mans Ultimate (e.g. C:\\Program Files (x86)\\Steam\\steamapps\\common\\Le Mans Ultimate) and hit Enter: ");
+        Console.WriteLine("Please enter the FULL (absolute) path to your steam folder containing Le Mans Ultimate (e.g. C:\\Program Files (x86)\\Steam\\steamapps\\common\\Le Mans Ultimate) and hit Enter: ");
         Console.ForegroundColor = ConsoleColor.DarkCyan;
         Console.Write("Path: ");
         Console.ForegroundColor = ConsoleColor.Gray;
@@ -126,7 +197,7 @@ static void FindPathToResultsFolder()
         Console.ForegroundColor = ConsoleColor.Gray;
         var playerName = Console.ReadLine();
 
-        Console.WriteLine("Please enter the FULL path to the directory where you wish to store your statistics file: ");
+        Console.WriteLine("Please enter the FULL (absolute, start with C:\\...) path to the directory where you wish to store your statistics file: ");
         Console.ForegroundColor = ConsoleColor.DarkCyan;
         Console.Write("Name: ");
         Console.ForegroundColor = ConsoleColor.Gray;
