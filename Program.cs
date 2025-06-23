@@ -106,14 +106,14 @@ void PrintMainStatistics()
     var favouriteCarsDistance = allDrivingSessions.GroupBy(ds => ds.CarType).Select(g => new { CarType = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
     for (int i = 0; i < 3; i++)
     {
-        Print.Line($"{i + 1}. {favouriteCarsDistance[i].CarType}", favouriteCarsDistance[i].Distance.ToString("0.00"), "km");
+        if (i < favouriteCarsDistance.Count) Print.Line($"{i + 1}. {favouriteCarsDistance[i].CarType}", favouriteCarsDistance[i].Distance.ToString("0.00"), "km");
     }
     
     Print.Header("Favourite tracks");
     var favouriteTrackCoursesDistance = allDrivingSessions.GroupBy(ds => ds.TrackCourse).Select(g => new { TrackCourse = g.Key, Distance = g.Sum(ds => ds.DrivenDistanceInMeters) / 1000 }).OrderByDescending(d => d.Distance).ToList();
     for (int i = 0; i < 3; i++)
     {
-        Print.Line($"{i + 1}. {favouriteTrackCoursesDistance[i].TrackCourse}", favouriteTrackCoursesDistance[i].Distance.ToString("0.00"), "km");   
+        if (i < favouriteTrackCoursesDistance.Count) Print.Line($"{i + 1}. {favouriteTrackCoursesDistance[i].TrackCourse}", favouriteTrackCoursesDistance[i].Distance.ToString("0.00"), "km");   
     }
 }
 #endregion
