@@ -1,8 +1,16 @@
-﻿using System.Text.Json;
+﻿using System.Reflection;
+using System.Text.Json;
 using LmuStatsViewer.Domain;
 
+var jsonOptions = new JsonSerializerOptions
+{
+    WriteIndented = true
+};
+
+var version = "0.1.20250625.0921";
+
 Console.ForegroundColor = ConsoleColor.Red;
-Console.WriteLine("Welcome to the LMU Stats Viewer...");
+Console.WriteLine($"Welcome to the LMU Stats Viewer (ver. {version})...");
 Console.ResetColor();
 FindPathToResultsFolder();
 
@@ -10,9 +18,10 @@ var allDrivingSessions = new List<DrivingSession>();
 FindProcessedDrivingSessionsAndLoad();
 FindAllUnprocessedFilesAndProcess();
 PrintMainStatistics();
+// PrintSessionsWitNonIntLapCounts();
 
-var menu = new List<string> { "Overview", "Favourite tracks", "Favourite cars", "Quit LMU Stats Viewer" };
-var menuChoices = new List<char> { 'o', 't', 'c', 'q' };
+var menu = new List<string> { "Overview", "Favourite tracks", "Favourite cars", "Show random session", "Quit LMU Stats Viewer" };
+var menuChoices = new List<char> { 'o', 't', 'c', 'r', 'q' };
 char menuChoice = 'o';
 while (menuChoice != 'q' && menuChoice != 'Q')
 {
@@ -32,6 +41,10 @@ while (menuChoice != 'q' && menuChoice != 'Q')
         case 'c':
         case 'C':
             PrintCarOverview();
+            break;
+        case 'r':
+        case 'R':
+            PrintRandomSessionThatHasLaps();
             break;
         case 'q':
         case 'Q':
@@ -81,6 +94,31 @@ void PrintCarOverview()
         Print.Line($"{i + 1}. {favouriteCarsDistance[i].CarType}", favouriteCarsDistance[i].Distance.ToString("0.00"), "km");
     }
 
+}
+
+void PrintRandomSessionThatHasLaps()
+{
+    int randomSessionIndex = 0;
+    do
+    {
+        randomSessionIndex = new Random().Next(0, allDrivingSessions.Count - 1);
+    } while (allDrivingSessions[randomSessionIndex].CompletedLaps.Equals(0));
+    Print.Header("Random session...");
+    Console.WriteLine(JsonSerializer.Serialize(allDrivingSessions[randomSessionIndex], jsonOptions));
+}
+
+void PrintSessionsWitNonIntLapCounts()
+{
+    int sessionsWithNonIntLapCounts = 0;
+    foreach (var session in allDrivingSessions)
+    {
+        if (session.CompletedLaps - (int)session.CompletedLaps > 0)
+        {
+            sessionsWithNonIntLapCounts++;
+            Console.WriteLine(JsonSerializer.Serialize(session, jsonOptions));
+        }
+    }
+    Print.Header($"Sessions with non-integer lap counts: {sessionsWithNonIntLapCounts}");
 }
 
 void PrintMainStatistics()
@@ -141,8 +179,15 @@ void SaveStatistics()
         Console.WriteLine("Path to statistics file not found!");
         return;
     }
-    
-    File.WriteAllText(Settings.PathToStatisticsFile, JsonSerializer.Serialize(allDrivingSessions));
+
+    try
+    {
+        File.WriteAllText(Settings.PathToStatisticsFile, JsonSerializer.Serialize(allDrivingSessions));
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine(e.Message);
+    }
 }
 
 void FindAllUnprocessedFilesAndProcess()

@@ -146,6 +146,24 @@ public class Lap
     [XmlAttribute("et")]
     public string ElapsedTime { get; set; }
 
+    [XmlAttribute("s1")] 
+    public double Sector1 { get; set; }
+    
+    [XmlAttribute("s2")]
+    public double Sector2 { get; set; }
+    
+    [XmlAttribute("s3")]
+    public double Sector3 { get; set; }
+    
+    [XmlAttribute("topspeed")]
+    public double TopSpeed { get; set; }
+    
+    [XmlAttribute("fuel")]
+    public double Fuel { get; set; }
+
+    [XmlAttribute("fuelUsed")]
+    public double FuelUsed { get; set; }
+
     [XmlText]
     public string LapTime { get; set; }
 }

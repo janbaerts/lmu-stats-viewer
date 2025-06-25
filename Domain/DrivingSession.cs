@@ -1,4 +1,5 @@
-﻿using System.Xml.Serialization;
+﻿using System.Text.Json;
+using System.Xml.Serialization;
 
 namespace LmuStatsViewer.Domain;
 
@@ -16,7 +17,7 @@ public class DrivingSession
     public string CarType { get; set; } = string.Empty;
     
     public SessionType SessionType { get; set; } = SessionType.Unknown;
-    public int CompletedLaps { get; set; }
+    public double CompletedLaps { get; set; }
 
     public double DrivenDistanceInMeters => TrackLengthInMeters * CompletedLaps;
     
@@ -87,13 +88,55 @@ public class DrivingSession
         return session;
     }
 
-    private static int EstimateCompletedLaps(Driver driver)
+    private static double EstimateCompletedLaps(Driver driver)
     {
-        // (JB) With the current data available, it's not possible to calculate driven distance accurately. Laps with
-        //      track limits warning that discount the lap, don't have a lap time, but so do laps that you did not complete
-        //      but returned to garage for example. So I make an estimate: all the laps in the collection and I deduct
-        //      one whole lap.
+        double completedLaps = 0;
+        const double averageFuelConsumptionDeviation = 0.01;
+
+        if (driver.Laps.Count == 0) return 0;
+
+        // (JB) The fuelUsed XML item in the data only becomes available as of the 2024/04/16 update! So before that,
+        //      I'll use the very rough laps driven estimate...
+        if (!driver.Laps.Exists(lap => lap.FuelUsed > 0)) return driver.Laps.Count - 1;
         
-        return driver.Laps.Count - 1;
+        // (JB) OK, so with the following solution it's necessary for any distance to count that you completed at least
+        //      one valid lap.
+        // (JB) Another challenge: when doing a 'Return to garage' and you refuel, the next invalid lap has a negative
+        //      fuelUsed value, X-).
+        // TODO (JB) Implement some sort of car/track average fuel consumption dictionary as a fallback.
+        
+        var validLaps = driver.Laps.Where(lap => !lap.LapTime.Contains("--.")).ToList();
+
+        if (validLaps.Count > 0)
+        {
+            completedLaps += validLaps.Count;
+            var averageFuelConsumptionPerValidLap = validLaps.Average(lap => lap.FuelUsed);
+            
+            var invalidLaps = driver.Laps.Where(lap => lap.LapTime.Contains("--.")).ToList();
+            double fuelUsedForInvalidLaps = 0;
+         
+            foreach (Lap invalidLap in invalidLaps)
+            {
+                // (JB) Laps completed but invalidated are counted here.
+                if (invalidLap.FuelUsed > (averageFuelConsumptionPerValidLap - averageFuelConsumptionDeviation) &&
+                    invalidLap.FuelUsed < (averageFuelConsumptionPerValidLap + averageFuelConsumptionDeviation))
+                {
+                    completedLaps++;
+                }
+                // (JB) Incomplete laps are counted here (e.g. your out lap).
+                else if (invalidLap.FuelUsed > 0 && invalidLap.FuelUsed < averageFuelConsumptionPerValidLap + averageFuelConsumptionDeviation)
+                {
+                    fuelUsedForInvalidLaps += invalidLap.FuelUsed;
+                }
+
+            }
+
+            if (fuelUsedForInvalidLaps > 0)
+            {
+                completedLaps += fuelUsedForInvalidLaps / averageFuelConsumptionPerValidLap;
+            }
+        }
+        
+        return completedLaps;
     }
 }
